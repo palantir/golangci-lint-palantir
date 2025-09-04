@@ -1,0 +1,40 @@
+products:
+  golangci-lint-palantir:
+    dist:
+      disters:
+        type: golangci-lint
+        config:
+          os-archs:
+            - os: darwin
+              arch: amd64
+            - os: darwin
+              arch: arm64
+            - os: linux
+              arch: amd64
+            - os: linux
+              arch: arm64
+          environment:
+            CGO_ENABLED: "0"
+            GOFLAGS: "-mod=readonly"
+          plugins:
+            - module: github.com/palantir/golangci-lint-palantir
+              import: github.com/palantir/golangci-lint-palantir/pkg/golinters/compiles
+              path: "{{ProjectDir}}"
+    publish: {}
+  golangci-lint-palantir-config:
+    dist:
+      disters:
+        golangci-lint-config:
+          type: manual
+          config:
+            extension: yml.tgz
+          script: |
+            #!/bin/bash
+            cp "${PROJECT_DIR}/pluginconfig/golangci.yml" "${DIST_WORK_DIR}/${PRODUCT}-${VERSION}.yml"
+            
+            tar -czvf "${DIST_DIR}/${PRODUCT}-${VERSION}.yml.tgz" -C "${DIST_WORK_DIR}" "${PRODUCT}-${VERSION}.yml"
+    publish: {}
+
+product-defaults:
+  publish:
+    group-id: com.palantir.golangci-lint-palantir
