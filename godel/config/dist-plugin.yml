@@ -20,6 +20,9 @@ products:
             - module: github.com/palantir/golangci-lint-palantir
               import: github.com/palantir/golangci-lint-palantir/pkg/golinters/compiles
               path: "{{ProjectDir}}"
+            - module: github.com/palantir/safe-logging-go
+              import: github.com/palantir/safe-logging-go/golangcilint/safelogging
+              version: v0.1.0
     publish: {}
   golangci-lint-palantir-config:
     dist:

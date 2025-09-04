@@ -8,6 +8,9 @@ linters:
       compiles:
         type: module
         description: A linter that verifies that the code compiles successfully.
+      safelogging:
+        type: module
+        description: A linter that verifies that information that is logged is safe to log.
     revive:
       rules:
         - name: package-comments
