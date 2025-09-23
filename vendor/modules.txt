@@ -55,8 +55,8 @@ github.com/hashicorp/hcl/json/token
 ## explicit; go 1.23.0
 github.com/ldez/grignotin/goenv
 github.com/ldez/grignotin/gomod
-# github.com/magiconair/properties v1.8.6
-## explicit; go 1.13
+# github.com/magiconair/properties v1.8.10
+## explicit; go 1.19
 github.com/magiconair/properties
 # github.com/mattn/go-colorable v0.1.14
 ## explicit; go 1.18
