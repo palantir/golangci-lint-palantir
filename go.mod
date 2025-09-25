@@ -3,9 +3,9 @@ module github.com/palantir/golangci-lint-palantir
 go 1.25.0
 
 require (
-	github.com/golangci/golangci-lint/v2 v2.4.0
+	github.com/golangci/golangci-lint/v2 v2.5.0
 	github.com/golangci/plugin-module-register v0.1.2
-	golang.org/x/tools v0.36.0
+	golang.org/x/tools v0.37.0
 )
 
 require (
