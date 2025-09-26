@@ -22,7 +22,7 @@ products:
               path: "{{ProjectDir}}"
             - module: github.com/palantir/safe-logging-go
               import: github.com/palantir/safe-logging-go/golangcilint/safelogging
-              version: v0.2.0
+              version: v0.4.0
     publish: {}
   golangci-lint-palantir-config:
     dist:
