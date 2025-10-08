@@ -5,9 +5,6 @@ linters:
 
   settings:
     custom:
-      compiles:
-        type: module
-        description: A linter that verifies that the code compiles successfully.
       safelogging:
         type: module
         description: A linter that verifies that information that is logged is safe to log.
@@ -16,9 +13,8 @@ linters:
         - name: package-comments
           disabled: true
 
-  # opinionated set of defaults: golangci-lint defaults + compiles, revive, and unconvert
+  # opinionated set of defaults: golangci-lint defaults + revive and unconvert
   enable:
-    - compiles
     - errcheck
     - govet
     - ineffassign
