@@ -5,23 +5,23 @@ default-tasks:
     com.palantir.distgo:dist-plugin:
       assets:
         - locator:
-            id: com.palantir.godel-distgo-asset-dist-golangci-lint:dist-golangci-lint-asset:0.6.0
+            id: com.palantir.godel-distgo-asset-dist-golangci-lint:dist-golangci-lint-asset:0.7.0
             checksums:
-              darwin-amd64: 8b23843d82757ff0233ea965ce69f7b86fb31cf5c9bb287908fd3b9a565bf046
-              darwin-arm64: ef5348b22e1b552c1b7ea498e0a83fe0d6123af38eb869cc95e6fd5963908530
-              linux-amd64: 8cef0ff4b53d20ae46605644950f814fbce9128c03a3b70f5be7de35c6047762
-              linux-arm64: 52d0ecbc6308bbfab1f2b06c12902055f8e69cd92876433a40ff51a7bfa9e179
+              darwin-amd64: bc01ec0b0ab5a815f5df92e012f5e10280e4cd0cb51610544b88d75ac3cc04ea
+              darwin-arm64: d64be3e309b4a84c928eda70d52b6ee3f0fb6602fb9be6421bc5aa55ba3d5244
+              linux-amd64: bde35e1a50593880dc4dd14f0e0162867a24432353abf6fabc82d4393b11c3f8
+              linux-arm64: 1a976cac5f0ce0b522ff86b2968ff8d490e0a3e15a44c81f3bbe07e9bf332263
 plugins:
   resolvers:
     - https://github.com/{{index GroupParts 1}}/{{index GroupParts 2}}/releases/download/v{{Version}}/{{Product}}-{{Version}}-{{OS}}-{{Arch}}.tgz
   plugins:
     - locator:
-        id: com.palantir.godel-mod-plugin:mod-plugin:1.50.0
+        id: com.palantir.godel-mod-plugin:mod-plugin:1.51.0
         checksums:
-          darwin-amd64: 9c0e11b9cd0dfdc8c2ed14ac9e1045f295ccaa9baf8bab7b2259e90183254157
-          darwin-arm64: 3639a0c1fa7020e4af545dc1e7b6f3a80ee7036f36c38facfed3f7b0df152639
-          linux-amd64: 0571bdf1d6014ed355cb0f3472186de36631f1e6a933401fdaa4ae773619c25c
-          linux-arm64: 7ce600a702684343b5d69dbc271a9396afc55b0a741f55976dd09db5185fc783
+          darwin-amd64: 6ff72bb11b5f9e4a0dff8f7825e6a6f6996113f9e03e86a9e8d03e2b7d35ce00
+          darwin-arm64: f16821dc59b157420124fdde618aa5ba0c3436d99970979cb607261d138a0ce2
+          linux-amd64: 9a9c12b41d31f18986299103ded67fcbfab04078a06726c743e4c7e5f4fe1be7
+          linux-arm64: a6a95432dc1e9cc32f705a541cd6b355e833a7144c140f53b9029dea5ac5a024
 environment:
   GOFLAGS: "-mod=vendor"
 exclude:
