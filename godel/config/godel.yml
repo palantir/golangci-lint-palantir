@@ -9,6 +9,7 @@ default-tasks:
             checksums:
               darwin-amd64: bc01ec0b0ab5a815f5df92e012f5e10280e4cd0cb51610544b88d75ac3cc04ea
               darwin-arm64: d64be3e309b4a84c928eda70d52b6ee3f0fb6602fb9be6421bc5aa55ba3d5244
+              linux-amd64: bde35e1a50593880dc4dd14f0e0162867a24432353abf6fabc82d4393b11c3f8
               linux-arm64: 1a976cac5f0ce0b522ff86b2968ff8d490e0a3e15a44c81f3bbe07e9bf332263
 plugins:
   resolvers:
