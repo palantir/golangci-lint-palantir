@@ -22,5 +22,12 @@ linters:
     - unconvert
     - unused
 
+  exclusions:
+    rules:
+      # ignores a warning produced by the experimental govet inline analyzer
+      - text: "inline: cannot inline: type parameter inference is not yet supported"
+        linters:
+          - govet
+
 run:
   relative-path-mode: gomod
