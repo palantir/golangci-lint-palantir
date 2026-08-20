@@ -6,6 +6,11 @@ default-tasks:
       assets:
         - locator:
             id: com.palantir.godel-distgo-asset-dist-golangci-lint:dist-golangci-lint-asset:0.14.0
+            checksums:
+              darwin-amd64: 09d1e391b596d23db1bba9f53070132837fba4f30c84764f47874cd116efcffd
+              darwin-arm64: d3e65c322e5d0dfcdbe28a7eba7a3b2d3e7d4d3268c9b3a2258a33663a8287ff
+              linux-amd64: 3ed10953e2604a6546d01cfd8b0dd49edf3064a3c0fe00d93a0eebc514b2b656
+              linux-arm64: 0ac39dc156f7bd81958efc045f73f89b797facfbaf181c7e252981137b2c5c89
 plugins:
   resolvers:
     - https://github.com/{{index GroupParts 1}}/{{index GroupParts 2}}/releases/download/v{{Version}}/{{Product}}-{{Version}}-{{OS}}-{{Arch}}.tgz
