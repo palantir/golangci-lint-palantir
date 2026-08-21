@@ -5,12 +5,12 @@ default-tasks:
     com.palantir.distgo:dist-plugin:
       assets:
         - locator:
-            id: com.palantir.godel-distgo-asset-dist-golangci-lint:dist-golangci-lint-asset:0.15.0
+            id: com.palantir.godel-distgo-asset-dist-golangci-lint:dist-golangci-lint-asset:0.16.0
             checksums:
-              darwin-amd64: 468f0c2b3ae8e1576c53ac3f40be9a0ba6ea8d8c2a9be14211e83d95e019aa28
-              darwin-arm64: 40d801288107daa25381706b7b4427fc95845f8142e11652d3e236336015ccf8
-              linux-amd64: 84150c03998789337bfe93e70c10694851c179b3f9b71a0242686e8fbe78d695
-              linux-arm64: 2bbe63db9fc6fcc337fe8129112038d824ce13be7e0d2e059768354c32749983
+              darwin-amd64: 0f97072fe18d9a7b960f100e873ea3c09aefbee23e67cf825bb1ad7148b7c53d
+              darwin-arm64: deada2c19e10d82cba4983dfbcbcdaaaf5015a3094e96bdafe2124fa1bd87133
+              linux-amd64: 4cffcea6932d700feaec568450e7a6f3e1c6ac8271446787e65f3dd90f1f5ac7
+              linux-arm64: 2209af2ee6214fa630087cba9736ee07a6a3497e26af6ed3bd39fa0dbc5ae496
 plugins:
   resolvers:
     - https://github.com/{{index GroupParts 1}}/{{index GroupParts 2}}/releases/download/v{{Version}}/{{Product}}-{{Version}}-{{OS}}-{{Arch}}.tgz
