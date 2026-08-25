@@ -1,5 +1,3 @@
 module github.com/palantir/golangci-lint-palantir
 
-go 1.26.0
-
-toolchain go1.26.5
+go 1.27.0
