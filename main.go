@@ -14,4 +14,12 @@
 
 package main
 
+// Import to create a module dependency. Done explicitly here
+// rather than as a "tool" directive in go.mod so that the module
+// is recorded as a direct requirement, which ensures that excavator
+// checks will automatically open PRs to update the version.
+import (
+	_ "github.com/golangci/golangci-lint/v2/pkg/commands"
+)
+
 // Intentionally empty
