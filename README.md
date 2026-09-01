@@ -16,3 +16,8 @@ This repository also publishes the configuration file at [pluginconfig/golangci.
 
 The custom build of `golangci-lint` is built using the [`godel-distgo-asset-dist-golangci-lint`](https://github.com/palantir/godel-distgo-asset-dist-golangci-lint)
 dister.
+
+The version of `golangci-lint` that is used as the base for the custom build of `golangci-lint` is specified in the
+"golangci-lint-version" field of the `golangci-lint` dister configuration in [dist-plugin.yml](godel/config/dist-plugin.yml).
+The godel "generate" ensures that the value of this field matches the value of the golangci-lint module specified in
+[go.mod](go.mod). 

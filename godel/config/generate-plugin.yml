@@ -1,0 +1,6 @@
+generators:
+  golangci-lint-version:
+    go-generate-dir: internal/generator
+    gen-paths:
+      paths:
+        - godel/config/dist-plugin.yml
