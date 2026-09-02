@@ -7,7 +7,7 @@ products:
           # specifies the version of golangci-lint that is used as a base to build golangci-lint-palantir.
           # The "generate" godel task keeps this in sync with the version of the "github.com/golangci/golangci-lint/v2"
           # module specified by the "require" directive in the "go.mod" of this project.
-          golangci-lint-version: v2.13.1
+          golangci-lint-version: v2.13.2
           os-archs:
             - os: darwin
               arch: amd64
