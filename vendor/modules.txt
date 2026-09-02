@@ -222,7 +222,7 @@ github.com/dave/dst/dstutil
 # github.com/denis-tingaikin/go-header v0.5.0
 ## explicit; go 1.21
 github.com/denis-tingaikin/go-header
-# github.com/dlclark/regexp2/v2 v2.2.1
+# github.com/dlclark/regexp2/v2 v2.7.1
 ## explicit; go 1.25
 github.com/dlclark/regexp2/v2
 github.com/dlclark/regexp2/v2/helpers
