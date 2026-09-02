@@ -298,7 +298,7 @@ func printString[T []byte | string](
 		state = newState
 		str = str[n:]
 
-		if y >= bounds.Max.Y {
+		if s != nil && y >= bounds.Max.Y {
 			// We've reached the bottom of the bounds, stop processing further
 			// lines.
 			break
