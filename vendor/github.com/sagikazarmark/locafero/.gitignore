@@ -1,8 +1,8 @@
 /.devenv/
 /.direnv/
-/.idea/
-/.pre-commit-config.yaml
+/.task/
 /bin/
 /build/
+/tmp/
 /var/
 /vendor/
