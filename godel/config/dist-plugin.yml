@@ -23,7 +23,7 @@ products:
           plugins:
             - module: github.com/palantir/safe-logging-go
               import: github.com/palantir/safe-logging-go/golangcilint/safelogging
-              version: v0.11.0
+              version: v0.12.0
     publish: {}
   golangci-lint-palantir-config:
     dist:
