@@ -11,8 +11,10 @@ that include the following custom linters:
 This repository also publishes the configuration file at [pluginconfig/golangci.yml], which configures the following:
 
 * Declares the `safelogging` linter as a module-based linter to make it available for use
-* Sets the enabled checks to be the golangci-lint defaults (minus staticheck), revive, and unconvert
+* Sets the enabled checks to be the golangci-lint defaults (minus staticcheck), revive, and unconvert
 * Configures the `revive` check to disable the check requiring package-level comments
+* Adds an exclusion rule to exclude "inline: cannot inline: type parameter inference is not yet supported" errors, which
+  are produced by the experimental govet inline analyzer and are not actionable
 
 The custom build of `golangci-lint` is built using the [`godel-distgo-asset-dist-golangci-lint`](https://github.com/palantir/godel-distgo-asset-dist-golangci-lint)
 dister.
