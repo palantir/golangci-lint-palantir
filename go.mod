@@ -6,7 +6,7 @@ toolchain go1.27.1
 
 require (
 	github.com/golangci/golangci-lint/v2 v2.14.0
-	golang.org/x/mod v0.41.0
+	golang.org/x/mod v0.42.0
 )
 
 require (
