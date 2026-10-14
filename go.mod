@@ -1,6 +1,8 @@
 module github.com/palantir/golangci-lint-palantir
 
-go 1.27.2
+go 1.27.0
+
+toolchain go1.27.2
 
 require (
 	github.com/golangci/golangci-lint/v2 v2.14.0
