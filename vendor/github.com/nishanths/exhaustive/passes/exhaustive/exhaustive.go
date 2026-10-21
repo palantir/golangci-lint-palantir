@@ -17,19 +17,19 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
+// Analyzer implements the exhaustive analysis.
+//
+// The analyzers specified in the Requires field may not all be
+// actually required. The set of analyzers that are actually required
+// depends on the runtime value of the -check flag, and it may be
+// a subset of the analyzers specified here. Programs that want
+// to be efficient should edit this field during program
+// initialization before the analysis begins.
+// TODO: consider adding API to facilitate this.
 var Analyzer = &analysis.Analyzer{
 	Name: "exhaustive",
 	Doc:  "check that expression switches and type switches are exhaustive",
 	Run:  run,
-	// Note: The set of analyzers specified in the Requires field
-	// may not all be actually necessary. The set of actually necessary
-	// analyzers depends on the value of the -check flag and may be a
-	// subset of the analyzers specified here.
-	// Analysis driver programs that want to be efficient
-	// should edit this field during program initialization
-	// before analyzers are run.
-	//
-	// TODO: consider adding API to facilitate the above.
 	Requires: []*analysis.Analyzer{
 		inspect.Analyzer,
 		enumerated.Analyzer, // necessary if -check argument specifies 'switch' or 'mapliteral'
@@ -39,7 +39,7 @@ var Analyzer = &analysis.Analyzer{
 
 func init() {
 	Analyzer.Flags.BoolVar(&fCheckEnforceOnly, "e", fCheckEnforceOnly, "check a switch only if it has '//exhaustive:enforce' comment")
-	Analyzer.Flags.BoolVar(&fDefaultEx, "d", fDefaultEx, "including a default case makes a switch exhaustive")
+	Analyzer.Flags.BoolVar(&fDefaultEx, "d", fDefaultEx, "switches that include a default case are always considered exhaustive")
 	Analyzer.Flags.BoolVar(&fRequireDefaultCase, "defrequire", fRequireDefaultCase, "always require a default case in checked expression switches")
 	Analyzer.Flags.BoolVar(&fRequireCaseNil, "casenil", fRequireCaseNil, "type switches must include a nil case to be exhaustive")
 	Analyzer.Flags.StringVar(&fCheck, "check", fCheck, "comma-separated list of syntax elements to check; available values: switch, typeswitch, mapliteral")
@@ -47,6 +47,7 @@ func init() {
 	Analyzer.Flags.Var(&fExcludeType, "typeignore", "switches in which the type name is matched by `regexp` are not checked")
 	Analyzer.Flags.Var(&fIncludeType, "typeonly", "only switches in which the type name is matched by `regexp` are checked")
 	Analyzer.Flags.Var(&fExcludeConst, "constignore", "constant names matched by `regexp` do not have to be included in the case clauses of an expression switch")
+	Analyzer.Flags.BoolVar(&fCheckImpossible, "impossible", fCheckImpossible, "check for unreachable cases in type switches")
 }
 
 var (
@@ -59,6 +60,7 @@ var (
 	fIncludeType        = repeatFlag[*regexp.Regexp]{set: regexp.Compile}
 	fExcludeType        = repeatFlag[*regexp.Regexp]{set: regexp.Compile}
 	fExcludeConst       = repeatFlag[*regexp.Regexp]{set: regexp.Compile}
+	fCheckImpossible    = false
 )
 
 func resetFlags() {
@@ -71,6 +73,7 @@ func resetFlags() {
 	fIncludeType = repeatFlag[*regexp.Regexp]{set: regexp.Compile}
 	fExcludeType = repeatFlag[*regexp.Regexp]{set: regexp.Compile}
 	fExcludeConst = repeatFlag[*regexp.Regexp]{set: regexp.Compile}
+	fCheckImpossible = false
 }
 
 // repeatFlag defines a flag that may be repeated to specify
@@ -135,6 +138,7 @@ type options struct {
 	includeTypePatterns   []*regexp.Regexp
 	excludeTypePatterns   []*regexp.Regexp
 	excludeConstPatterns  []*regexp.Regexp
+	checkImpossible       bool
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -152,6 +156,7 @@ func run(pass *analysis.Pass) (any, error) {
 		includeTypePatterns:   fIncludeType.vals,
 		excludeTypePatterns:   fExcludeType.vals,
 		excludeConstPatterns:  fExcludeConst.vals,
+		checkImpossible:       fCheckImpossible,
 	}
 
 	var nodes []ast.Node
@@ -175,19 +180,17 @@ func run(pass *analysis.Pass) (any, error) {
 			return false
 		}
 
-		var cmap ast.CommentMap
-
 		c.Inspect(nodes, func(c inspector.Cursor) (descend bool) {
-			if cmap == nil {
-				cmap = ast.NewCommentMap(pass.Fset, file, file.Comments)
-			}
 			switch n := c.Node().(type) {
 			case *ast.SwitchStmt:
-				checkExprSwitch(pass, n, cmap[n], opts)
+				comments := switchComments(c, pass.Fset, file.Comments)
+				checkExprSwitch(pass, n, comments, opts)
 			case *ast.CompositeLit:
-				checkMapLit(pass, n, compositeLitComments(pass, cmap, c), opts)
+				comments := compositeLitComments(c, pass.Fset, file.Comments)
+				checkMapLit(pass, n, comments, opts)
 			case *ast.TypeSwitchStmt:
-				checkTypeSwitch(pass, n, cmap[n], typeSwitchCh, opts)
+				comments := switchComments(c, pass.Fset, file.Comments)
+				checkTypeSwitch(pass, n, comments, typeSwitchCh, opts)
 			default:
 				panic(fmt.Sprintf("internal error: unexpected node of type %T", n))
 			}

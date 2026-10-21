@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
-	"maps"
 	"slices"
 	"strings"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/nishanths/exhaustive/passes/enumerated"
 
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/ast/inspector"
 )
 
 func checkExprSwitch(pass *analysis.Pass, sw *ast.SwitchStmt, comments []*ast.CommentGroup, opts *options) {
@@ -55,20 +53,16 @@ func checkExprSwitch(pass *analysis.Pass, sw *ast.SwitchStmt, comments []*ast.Co
 		}
 	}
 
-	reportMissingDefault := opts.requireDefaultCase
-	if v, ok := directives[dirDefrequire]; ok {
-		reportMissingDefault = v
-	}
-
 	need := needValues(pass.Pkg, cs, opts)
+
 	for _, cc := range sw.Body.List {
 		cc := cc.(*ast.CaseClause)
 		if cc.List == nil {
-			reportMissingDefault = false
 			if opts.defaultCaseExhaustive {
 				clear(need)
 				break
 			}
+			continue
 		}
 		for _, expr := range cc.List {
 			tv, ok := pass.TypesInfo.Types[expr]
@@ -80,11 +74,31 @@ func checkExprSwitch(pass *analysis.Pass, sw *ast.SwitchStmt, comments []*ast.Co
 			}
 		}
 	}
-	if reportMissingDefault {
-		pass.Reportf(sw.Pos(), "missing default case")
-	}
+
 	if len(need) != 0 {
 		pass.Reportf(sw.Pos(), "missing cases in expression switch: %s", formatMissingNames(pass.Pkg, need))
+	}
+
+
+	requireDefault := opts.requireDefaultCase
+	if v, ok := directives[dirDefrequire]; ok {
+		requireDefault = v
+	}
+	if requireDefault {
+		checkDefaultCase(pass, sw)
+	}
+}
+
+func checkDefaultCase(pass *analysis.Pass, sw *ast.SwitchStmt) {
+	foundDefault := false
+	for _, cc := range sw.Body.List {
+		if cc.(*ast.CaseClause).List == nil {
+			foundDefault = true
+			break
+		}
+	}
+	if !foundDefault {
+		pass.Reportf(sw.Pos(), "missing default case")
 	}
 }
 
@@ -108,14 +122,13 @@ var universeError = types.Universe.Lookup("error")
 type typeSwitchState struct {
 	// The 'map[tp]struct{}' value is the set of types T
 	// or *T that implement the interface in the key,
-	// where the type name T is that of a non-interface
-	// defined type.
+	// where T is a non-interface defined type.
 	impl map[*types.Interface]map[tp]struct{}
 
 	// The '[]tp' value is the set of types
 	// that are identical to the type in the key.
-	// One of the elements of the '[]tp' value will be
-	// the type in the key itself.
+	// One of the type names in '[]tp' will be the
+	// type name of the defined type in the key itself.
 	//
 	// The type name in the key is always that of a defined type.
 	// See func computeTypeRelations for details.
@@ -129,13 +142,6 @@ type typeSwitchState struct {
 type tp struct {
 	*types.TypeName
 	pointer bool
-}
-
-func (t tp) String() string {
-	// Lower noise in debug prints.
-	// A *types.TypeName value formats to a long string;
-	// use its Type() alone.
-	return fmt.Sprintf("{%v %v}", t.TypeName.Type(), t.pointer)
 }
 
 func checkTypeSwitch(pass *analysis.Pass, sw *ast.TypeSwitchStmt, comments []*ast.CommentGroup, ch *typeSwitchState, opts *options) {
@@ -213,14 +219,16 @@ func checkTypeSwitch(pass *analysis.Pass, sw *ast.TypeSwitchStmt, comments []*as
 				clear(need)
 				break
 			}
+			continue
 		}
-		for _, expr := range cc.List {
-			t := pass.TypesInfo.TypeOf(expr)
-			if t == nil {
+
+		for _, caseExpr := range cc.List {
+			caseType := pass.TypesInfo.TypeOf(caseExpr)
+			if caseType == nil {
 				continue
 			}
 
-			if t == types.Typ[types.UntypedNil] {
+			if caseType == types.Typ[types.UntypedNil] {
 				reportMissingNil = false
 			}
 
@@ -233,20 +241,20 @@ func checkTypeSwitch(pass *analysis.Pass, sw *ast.TypeSwitchStmt, comments []*as
 			// sufficient to only consider interface types (but not,
 			// for example, pointers to interface types).
 			//
-			// The following code as written correctly handles
-			// traditional interface types and type parameters.
+			// The following code correctly handles both traditional
+			// interfaces and general interfaces (from a type parameter).
 			// It is not necessary to handle e.g. []P, where P is a
 			// type parameter, because these are not of underlying
 			// type interface and it is impossible for a type to
 			// implement them.
-			if caseInterface, ok := t.Underlying().(*types.Interface); ok {
-				computeImplements(ch, r, caseInterface)
-				for t := range ch.impl[caseInterface] {
+			if i, ok := caseType.Underlying().(*types.Interface); ok {
+				computeImplements(ch, r, i)
+				for t := range ch.impl[i] {
 					delete(need, t)
 				}
 			}
 
-			switch t := types.Unalias(t).(type) {
+			switch t := types.Unalias(caseType).(type) {
 			case *types.Named:
 				n := t
 				delete(need, tp{n.Obj(), false})
@@ -261,20 +269,62 @@ func checkTypeSwitch(pass *analysis.Pass, sw *ast.TypeSwitchStmt, comments []*as
 	if reportMissingNil || len(need) != 0 {
 		pass.Reportf(sw.Pos(), "missing cases in type switch: %s", formatMissingTypes(pass.Pkg, need, reportMissingNil))
 	}
+
+	if opts.checkImpossible {
+		checkUnreachableCases(pass, sw)
+	}
 }
 
-func computeImplements(ch *typeSwitchState, r *finder.Result, swInterface *types.Interface) {
-	if _, ok := ch.impl[swInterface]; ok {
+func checkUnreachableCases(pass *analysis.Pass, sw *ast.TypeSwitchStmt) {
+	// Note: This function does not check for issues that are
+	// already reported by "go build".
+	// As such, the following categories of issues
+	// are not checked: identical types in type switch cases;
+	// impossible type in type switch case.
+
+	earlier := make(map[*types.Interface]ast.Expr) // interfaces in earlier case clauses
+	current := make(map[*types.Interface]ast.Expr) // interfaces in current case clause
+
+	for _, cc := range sw.Body.List {
+		clear(current)
+
+		for _, caseExpr := range cc.(*ast.CaseClause).List {
+			caseType := pass.TypesInfo.TypeOf(caseExpr)
+			if caseType == nil {
+				continue
+			}
+			if i, ok := caseType.Underlying().(*types.Interface); ok {
+				if _, ok := current[i]; !ok {
+					current[i] = caseExpr
+				}
+			}
+			for k, v := range earlier {
+				if types.Implements(caseType, k) {
+					pass.Reportf(caseExpr.Pos(), "unreachable type switch case %s (matched by earlier case %s)", formatExpr(caseExpr), formatExpr(v))
+				}
+			}
+		}
+
+		for k, v := range current {
+			if _, ok := earlier[k]; !ok {
+				earlier[k] = v
+			}
+		}
+	}
+}
+
+func computeImplements(ch *typeSwitchState, r *finder.Result, intf *types.Interface) {
+	if _, ok := ch.impl[intf]; ok {
 		return
 	}
 
 	if ch.impl == nil {
 		ch.impl = make(map[*types.Interface]map[tp]struct{})
 	}
-	ch.impl[swInterface] = make(map[tp]struct{})
+	ch.impl[intf] = make(map[tp]struct{})
 
 	add := func(d tp) {
-		ch.impl[swInterface][d] = struct{}{}
+		ch.impl[intf][d] = struct{}{}
 	}
 
 	// Note: None of the non-interface predeclared types have
@@ -311,17 +361,21 @@ func computeImplements(ch *typeSwitchState, r *finder.Result, swInterface *types
 			// Rather, the interface check is specific to the logic
 			// of the analysis, which should not consider interfaces
 			// as a possible implementing type in this context.
-			if !underlyingIs[*types.Interface](n) {
-				if types.Implements(types.NewPointer(n), swInterface) {
+			if !underlyingIs[*types.Interface](n) && n.Origin().TypeParams() == nil {
+				if types.Implements(types.NewPointer(n), intf) {
 					add(tp{n.Obj(), true})
 				}
-				if types.Implements(n, swInterface) {
+				if types.Implements(n, intf) {
 					add(tp{n.Obj(), false})
 				}
 			}
 		case *types.Pointer: // pointer to a defined type
-			if n, ok := types.Unalias(t.Elem()).(*types.Named); ok && !underlyingIs[*types.Interface](n) && types.Implements(types.NewPointer(n), swInterface) {
-				add(tp{n.Obj(), true})
+			if n, ok := types.Unalias(t.Elem()).(*types.Named); ok {
+				if !underlyingIs[*types.Interface](n) && n.Origin().TypeParams() == nil {
+					if types.Implements(types.NewPointer(n), intf) {
+						add(tp{n.Obj(), true})
+					}
+				}
 			}
 		}
 	}
@@ -343,17 +397,23 @@ func computeTypeRelations(ch *typeSwitchState, r *finder.Result) {
 			switch tt := types.Unalias(t).(type) {
 			case *types.Named:
 				n := tt
-				add(tp{n.Obj(), false}, tp{tn, false})
-				add(tp{n.Obj(), true}, tp{tn, true})
+				if n.Origin().TypeParams() == nil {
+					add(tp{n.Obj(), false}, tp{tn, false})
+					add(tp{n.Obj(), true}, tp{tn, true})
+				}
 			case *types.Pointer:
 				if n, ok := types.Unalias(tt.Elem()).(*types.Named); ok {
-					add(tp{n.Obj(), true}, tp{tn, false})
+					if n.Origin().TypeParams() == nil {
+						add(tp{n.Obj(), true}, tp{tn, false})
+					}
 				}
 			}
 		case *types.Named:
 			n := t
-			add(tp{n.Obj(), false}, tp{tn, false})
-			add(tp{n.Obj(), true}, tp{tn, true})
+			if n.Origin().TypeParams() == nil {
+				add(tp{n.Obj(), false}, tp{tn, false})
+				add(tp{n.Obj(), true}, tp{tn, true})
+			}
 		default:
 			panic(fmt.Sprintf("internal error: unexpected type %T", t))
 		}
@@ -671,41 +731,14 @@ func unpointer(t types.Type) types.Type {
 	}
 }
 
-func compositeLitComments(pass *analysis.Pass, comments ast.CommentMap, c inspector.Cursor) []*ast.CommentGroup {
-	ret := make(map[*ast.CommentGroup]struct{})
-	add := func(gs ...*ast.CommentGroup) {
-		for _, g := range gs {
-			if _, ok := ret[g]; ok {
-				continue
-			}
-			ret[g] = struct{}{}
-		}
-	}
-loop:
-	for c := range c.Enclosing((*ast.AssignStmt)(nil), (*ast.ValueSpec)(nil), (*ast.GenDecl)(nil)) {
-		switch n := c.Node().(type) {
-		case *ast.AssignStmt:
-			add(comments[n]...)
-			break loop
-		case *ast.ValueSpec:
-			add(n.Doc)
-			add(n.Comment)
-			add(comments[n]...)
-			// note: do not break the loop here; also need to
-			// see the parent *ast.GenDecl.
-		case *ast.GenDecl:
-			add(n.Doc)
-			add(comments[n]...)
-			break loop
-		}
-	}
-	return slices.Collect(maps.Keys(ret)) // current callers do not care about the order
-}
-
 func nameString(currentPkg *types.Package, obj types.Object) string {
 	if currentPkg != obj.Pkg() && obj.Pkg() != nil {
 		return obj.Pkg().Name() + "." + obj.Name()
 	} else {
 		return obj.Name()
 	}
+}
+
+func formatExpr(e ast.Expr) string {
+	return types.ExprString(e)
 }
